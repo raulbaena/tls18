@@ -4,6 +4,7 @@ mkdir /var/www/www.auto1.cat
 mkdir /var/www/www.auto2.cat
 mkdir /var/www/www.web1.org
 mkdir /var/www/www.web2.org
+mkdir /var/www/certs
 
 # www.auto1.cat
 cp /opt/docker/index.auto1.html /var/www/www.auto1.cat/index.html
