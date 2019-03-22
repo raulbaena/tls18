@@ -1,0 +1,188 @@
+TLS/SSL o cryptografia
+-----------------------
+Simetrica: En l'openVPN vam utilitzar un secret compartit, els dos interlocutors tenen el secret compartit. 
+Els tipus de claus que utilitzem de 256 bits. Aquestes claus son mes lleugeres de mida y menys algoristme
+Data in motion o fluxe de dades o transmisio de dades
+
+Asimetrica: Tenim la clau publica y la clau privada, una parella de claus. Una clau petita es 2048, 4096. 
+Es mes costos el xifrat, mes mida y l'algoristme es mes. Es fa servir amb dades at rest, dades que estan quietes.
+
+La majoria de vegades s'aplica un model hibrid anomentat diffie-helman, es genera un secret compartit y es renegocia
+l'encriptat amb la clau Asimetrica
+
+Models de seguretat
+--------------------
+Web of Trust: gpg, la confianza entre nosaltres
+
+PKI (Public Key Infrastructure): openssl, en aquest model tenim un model que es CA (Autoritat Certificadora). Son nodes
+arrel de cetificacio, emeten certificats que poden ser d'altres sub CA o finals. Una CA es defineix com asi mateixa com a CA.
+El CA tindra la credibilitat que li donaran els clients. 
+
+Les dues proporcionen la mateixa seguretat, son mecanismes de encriptacio segurs.
+
+Crearem una CA que es diura CA Veritata Absoluta
+Aquesta CA te una private key (CA.pem)
+Auqesta CA te un cert (CA.pem)
+Montarem un servidor apache en un docker on posarem les claus. En aquest servidor tindrem una Private Key que es diura ServerKey.pem
+La clau publica del servidor es un tros de la clau privada. Amb la clau privada farem un request. Fara falta la informacio del subject 
+Models de seguretat la informació Country, State, Locality, Organiczation Name, Organiczation Unit, Common Name, Email.
+
+P
+Un certificat conte el meu ID amb tots els camps y el certificat conte la clau publica. La CA valida el certificat amb la seva clau privada
+Es firma amb la clau privada.
+
+Generem el certificats
+[isx53320159@i12 cert-keys]$ openssl genrsa -out cakey.pem
+Generating RSA private key, 2048 bit long modulus
+.........................................................+++
+.....................................................+++
+e is 65537 (0x010001)
+
+Mostrar clau publica
+[isx53320159@i12 cert-keys]$ openssl rsa -pubout -in cakey.pem | less
+
+Guardem la clau publica en un fitxer
+[isx53320159@i12 cert-keys]$ openssl rsa -pubout -in cakey.pem > capub.pem
+writing RSA key
+
+Consumint una clau publica , Mostra el modul y el exponent
+[isx53320159@i12 cert-keys]$ openssl rsa -noout -text -pubin -in capub.pem
+Public-Key: (2048 bit)
+Modulus:
+    00:da:4a:92:fd:15:f7:46:bd:8d:a4:6a:b4:eb:9a:
+    24:85:9e:da:d7:07:1b:4d:76:42:e0:4e:31:99:99:
+    ac:cd:ed:89:88:bd:af:6d:d7:fd:93:f1:ad:ec:58:
+    c8:8b:8a:67:cb:f5:ff:8c:98:60:79:39:f4:68:91:
+    ad:13:62:56:77:9f:ec:a3:61:7f:25:ba:1f:44:d7:
+    ee:1f:f4:97:2d:c1:18:25:35:3a:22:71:5f:fe:2a:
+    b4:0d:cb:1b:74:63:16:c0:37:be:95:ea:4e:42:e3:
+    c9:1d:e7:65:4e:31:20:06:a0:2c:65:32:a5:e8:1a:
+    2e:cc:0a:85:1a:dd:44:3a:41:57:d7:e8:22:67:1e:
+    e8:5c:dd:33:09:f7:15:6c:e3:e8:f6:09:b3:f2:0c:
+    29:11:33:49:69:22:a6:82:0d:7e:37:27:c1:7d:1c:
+    89:ca:9e:cb:3b:d4:a5:cf:21:f0:86:2a:64:d5:ca:
+    6c:8f:26:10:c6:09:d0:7d:0a:ca:1a:09:30:19:af:
+    de:0a:49:6a:9e:c0:25:a2:e9:1a:66:ac:db:29:5b:
+    45:cd:89:81:6c:f1:f7:16:9a:6b:92:f7:16:83:a9:
+    1c:f0:82:8c:e1:79:9a:2a:aa:78:91:ba:ec:2f:41:
+    ea:85:33:02:fa:56:10:65:e3:63:a2:19:1e:bc:bf:
+    73:25
+Exponent: 65537 (0x10001)
+
+#Fabricar certificat de la Ca Veritat absoluta autofirmat
+[isx53320159@i12 cert-keys]$ openssl req -new -x509 -nodes -days 3650 -key cakey.pem -out cacert.pem
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:ca
+State or Province Name (full name) []:barcelona
+Locality Name (eg, city) [Default City]:barcelona
+Organization Name (eg, company) [Default Company Ltd]:edt
+Organizational Unit Name (eg, section) []:informatica
+Common Name (eg, your name or your server's hostname) []:VeritatAbsoluta
+Email Address []:veritat@edt.org
+
+Mostrar contingut de un certificat
+[isx53320159@i12 cert-keys]$ openssl x509 -noout -text -in cacert.pem | less
+
+CA: TRUE --> Es que el cetificat es valid pero fabricar altres certificats y ser CA
+
+Mostrar dates
+[isx53320159@i12 cert-keys]$ openssl x509 -noout -dates -in cacert.pem | less
+
+Mostrar subjecty
+[isx53320159@i12 cert-keys]$ openssl x509 -noout -subject -in cacert.pem | less
+
+Com saber per a que serveix un certificat
+[isx53320159@i12 cert-keys]$ openssl x509 -noout -purpose -in cacert.pem | less
+
+Crear els certificats de servidor
+Generem la nostra clau privada
+[isx53320159@i12 cert-keys]$ openssl genrsa -out serverkey.pem
+Generating RSA private key, 2048 bit long modulus
+...............................+++
+........................................................................................................+++
+e is 65537 (0x010001)
+
+Generar una petició de certificat request per enviar a l'entitat certificadora CA
+[isx53320159@i12 cert-keys]$ openssl req -new -key serverkey.pem -out serverreq.pem
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:ca
+State or Province Name (full name) []:barcelona
+Locality Name (eg, city) [Default City]:barcelona
+Organization Name (eg, company) [Default Company Ltd]:edt
+Organizational Unit Name (eg, section) []:informatica
+Common Name (eg, your name or your server's hostname) []:https.edt.org  
+Email Address []:https@edt.org
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:jupiter
+An optional company name []:inf
+
+Observar contingut del certificat request
+[isx53320159@i12 cert-keys]$ openssl req -noout -text -in serverreq.pem | less
+
+Signar el certificat
+Creem un fitxer ca.conf y copiem lo seguent
+basicConstraints = critical,CA:FALSE
+extendedKeyUsage = serverAuth,emailProtection
+
+Firmem el certificat request
+[isx53320159@i12 cert-keys]$ openssl x509 -CAkey cakey.pem -CA cacert.pem -req -in serverreq.pem -out servercert.1.pem
+Signature ok
+subject=C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = https.edt.org, emailAddress = https@edt.org
+Getting CA Private Key
+cacert.srl: No such file or directory
+140419051464512:error:06067099:digital envelope routines:EVP_PKEY_copy_parameters:different parameters:crypto/evp/p_lib.c:91:
+140419051464512:error:02001002:system library:fopen:No such file or directory:crypto/bio/bss_file.c:74:fopen('cacert.srl','r')
+140419051464512:error:2006D080:BIO routines:BIO_new_file:no such file:crypto/bio/bss_file.c:81:
+[isx53320159@i12 cert-keys]$ openssl x509 -CAkey cakey.pem -CA cacert.pem -req -in serverreq.pem -CAcreateserial -days 3650 -out servercert.1.pem
+Signature ok
+subject=C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = https.edt.org, emailAddress = https@edt.org
+Getting CA Private Key
+
+Y haurem un certificat per al servidor 
+
+Numero de serie: [isx53320159@i12 cert-keys]$ cat cacert.srl 
+DBBD4783214BA963
+
+Mirem el certificat
+[isx53320159@i12 cert-keys]$ openssl x509 -noout -text -in servercert.1.pem | less
+Certificate:
+    Data:
+        Version: 1 (0x0)
+        Serial Number:
+            db:bd:47:83:21:4b:a9:63
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = VeritatAbsoluta, emailAddress = veritat@edt.org
+        Validity
+            Not Before: Mar 22 11:02:08 2019 GMT
+            Not After : Mar 19 11:02:08 2029 GMT
+        Subject: C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = https.edt.org, emailAddress = https@edt.org
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+
+ja ho tindrem firmat per la CA
+
+Crearem un certificat amb extfile (Fitxer de configuracio extern)
+[isx53320159@i12 cert-keys]$ openssl x509 -CAkey cakey.pem -CA cacert.pem -req -in serverreq.pem -CAcreateserial -days 3650 -extfile ca.conf -out servercert.2.pem 
+Signature ok
+subject=C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = https.edt.org, emailAddress = https@edt.org
+Getting CA Private Key
+[isx53320159@i12 cert-keys]$ 
+
+Mirem el fictxer y observerm que posa la CA = FALSE
+
