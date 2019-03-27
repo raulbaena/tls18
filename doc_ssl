@@ -139,7 +139,8 @@ basicConstraints = critical,CA:FALSE
 extendedKeyUsage = serverAuth,emailProtection
 
 Firmem el certificat request
-[isx53320159@i12 cert-keys]$ openssl x509 -CAkey cakey.pem -CA cacert.pem -req -in serverreq.pem -out servercert.1.pem
+[isx53320159@i12 cert-keys]$ openssl x509 -CAkey cakey.pem -CA cacert.pem -req -in serverreq.web1.pem -days 3650 -CAcreateserial  -out servercert.web1.pem
+
 Signature ok
 subject=C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = https.edt.org, emailAddress = https@edt.org
 Getting CA Private Key
@@ -185,4 +186,6 @@ Getting CA Private Key
 [isx53320159@i12 cert-keys]$ 
 
 Mirem el fictxer y observerm que posa la CA = FALSE
+
+
 
