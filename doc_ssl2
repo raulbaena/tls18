@@ -352,6 +352,12 @@ to be sent with your certificate request
 A challenge password []:
 An optional company name []:
 
+Signa certificat amb v3_ca
+[isx53320159@i11 cert-keys]$ openssl x509 -CAkey cakey.pem -CA cacert.pem -req -in prova1req.pem -CAcreateserial -extensions v3_ca -out prova1cert.pem 
+Signature ok
+subject=C = ca, ST = Barcelona, L = santaco, O = Default Company Ltd, CN = www.server.cat, emailAddress = pere@edt.cat
+Getting CA Private Key
+
 
 
 
