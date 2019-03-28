@@ -270,6 +270,9 @@ Certificate chain
 ---
 Server certificate
 
+Fitxer openssl
+---------------
+
 PKI: Public Key Infrastructure
 
 [isx53320159@i12 pki]$ tree rpm-gpg/ | less --> mostra els certificats dels repositoris de descargar
@@ -305,4 +308,51 @@ default_days = 365 --> Dies per defecte
 default_crl_days =  --> Dies revocated
 default_md = sha256
 preserver = no
+
+
+Generem la clau privada prova1.key
+
+[isx53320159@i11 cert-keys]$ openssl genrsa -out prova1.key
+Generating RSA private key, 2048 bit long modulus
+...................................................+++
+..........................................................................................+++
+e is 65537 (0x010001)
+
+Copiem el fitxer de configuraxio de openssl que es troba a /etc/pki/tls al nostre lloc de treball y editem la configuracio. 
+Generemo una request pasant-li el fixter
+[isx53320159@i11 cert-keys]$ openssl req -config openssl.cnf -new -key prova1.key -out prova1req.pem
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name [Repuclica Ca]:ca
+State or Province Name (full name) [Barcelona]:b
+Locality Name (eg, city) [santaco]:^C
+[isx53320159@i11 cert-keys]$ openssl req -config openssl.cnf -new -key prova1.key -out prova1req.pem
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name [Repuclica Ca]:ca
+State or Province Name (full name) [Barcelona]:
+Locality Name (eg, city) [santaco]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:www.server.cat
+Email Address []:pere@edt.cat
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+
+
+
+
 
