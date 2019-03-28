@@ -1,0 +1,308 @@
+Ports stamdard y privileged
+ldap : 389/
+ldaps: 636
+http: 80
+https: 443
+
+Per podernos conectar per ldaps hem de conectar el por 636, dintre ldap tenim dos protocols ldap:// y ldaps://. 
+ssl: Secure Socket Layer el tls difereix una mica del ssl, esta 
+tls: Transport Layer security capa 4 de transport
+En ldap es parla en text pla
+En ldaps es parla xifrat en tls/ssl
+Capa IP 3
+Avui dia s'utilitza el port standard per treballar per encriptat amb starttls. Mitjançant el port standard es fan les comunicacions encriptadas
+
+En clase a l'hora de fer
+ldapsearch -d1 -x -LLL -b 'dc=edt,dc=org' -H ldaps://172.17.0.2 dn | les
+
+TLS: cannot open certdb '/etc/openldap/certs', error -8018:Unknown PKCS #11 error.
+TLS: certificate [E=veritat@edt.org,CN=VeritatAbsoluta,OU=informatica,O=edt,L=barcelona,ST=barcelona,C=ca] is not valid - error -8172:Peer's certificate issuer has been marked as not trusted by the user..
+TLS: error: connect - force handshake failure: errno 0 - moznss error -8172
+TLS: can't connect: TLS error -8172:Peer's certificate issuer has been marked as not trusted by the user..
+
+Els certificats es busquen per el hash del subject del certificat
+
+Maquina ldaps 
+configuracio servidor
+# See slapd.conf(5) for details on configuration options.
+# This file should NOT be world readable.
+include
+/etc/openldap/schema/corba.schema
+include
+/etc/openldap/schema/core.schema
+include
+/etc/openldap/schema/cosine.schema
+include
+/etc/openldap/schema/duaconf.schema
+include
+/etc/openldap/schema/dyngroup.schema
+include
+/etc/openldap/schema/inetorgperson.schema
+include
+/etc/openldap/schema/java.schema
+include
+/etc/openldap/schema/misc.schema
+include
+/etc/openldap/schema/nis.schema
+include
+/etc/openldap/schema/openldap.schema
+include
+/etc/openldap/schema/ppolicy.schema
+include
+/etc/openldap/schema/collective.schema
+include /etc/openldap/schema/samba.schema
+# Allow LDAPv2 client connections. This is NOT the default.
+allow bind_v2
+Pàgina 49 de 93HowTo ASIX Certificats Digitals
+pidfile
+/var/run/openldap/slapd.pid
+TLSCACertificateFile
+/etc/openldap/certs/ca.crt
+TLSCertificateFile
+/etc/openldap/certs/server.crt
+TLSCertificateKeyFile
+/etc/openldap/certs/server.key
+TLSVerifyClient
+never
+TLSCipherSuite
+HIGH:MEDIUM:LOW:+SSLv2
+# ----------------database {0} config -----------------------------------
+database config
+rootdn "cn=Sysadmin,cn=config"
+rootpw syskey
+# ------------------------------------------------------------------------
+# ----------------database {1} edt.org -----------------------------------
+database bdb
+suffix "dc=edt,dc=org"
+rootdn "cn=Manager,dc=edt,dc=org"
+rootpw secret
+directory /var/lib/ldap
+#index objectClass eq, press
+access to * by self write by * read
+# ------------------------------------------------------------------------
+# -----------------enable monitoring -------------------------------------
+database monitor
+access to * by dn.exact="cn=Manager,dc=edt,dc=org" read by * none
+# ----------------- end database monitor ---------------------------------
+
+
+Configuracio del client
+#
+# LDAP Defaults
+#
+
+# See ldap.conf(5) for details
+# This file should be world readable but not world writable.
+
+#BASE   dc=example,dc=com
+#URI    ldap://ldap.example.com ldap://ldap-master.example.com:666
+
+#SIZELIMIT      12
+#TIMELIMIT      15
+#DEREF          never
+
+#TLS_CACERTDIR /etc/openldap/certs
+
+TLS_CACERT /var/tmp/cacert.pem
+
+# Turning this off breaks GSSAPI used with krb5 when rdns = false
+SASL_NOCANON    on
+
+URI ldap://ldap/
+BASE dc=escoladeltreball,dc=org
+
+ldapsearch -vx -LLL -Z -b 'dc=edt,dc=org' -H ldap://ldap.edt.org dn 
+El guion Z es starttls y si no lo consigue hace la consulta sin TLS(peticio). El guin ZZ es sempre les conexions STARTTLS (Exigencia)
+
+openssl s_client -connect ldap.edt.org:636 --> Serveix per utilitzar openssl com a telnet client ssl. 
+
+
+Creem la maquina https y fem un telnet, sembla que esta parlant http en text pla la peticio y el server nomes enten https
+[isx53320159@i12 certs]$ telnet 172.17.0.2 443
+Trying 172.17.0.2...
+Connected to 172.17.0.2.
+Escape character is '^]'.
+GET / HTTP/1.0
+HTTP/1.1 400 Bad Request
+Date: Wed, 27 Mar 2019 10:36:48 GMT
+Server: Apache/2.4.34 (Fedora) OpenSSL/1.1.0h-fips
+Content-Length: 362
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>400 Bad Request</title>
+</head><body>
+<h1>Bad Request</h1>
+<p>Your browser sent a request that this server could not understand.<br />
+Reason: You're speaking plain HTTP to an SSL-enabled server port.<br />
+ Instead use the HTTPS scheme to access this URL, please.<br />
+</p>
+</body></html>
+Connection closed by foreign host.
+
+Ens conectem miyjançant openssl
+[isx53320159@i12 certs]$ openssl s_client -connect 172.17.0.2:443
+
+
+Open ssl server
+Simula que ets un servidor utilitzant web amb aquest certificats al port 50000
+[isx53320159@i12 tls18:https]$ openssl s_server -key serverkey.auto1.pem -cert servercert.auto1.pem -accept 50000 -www 
+
+Probem a conectarnos y com podem observar amb el telnet ens refusa la conexio. Pero amb el openssl no la refusa
+[isx53320159@i12 tls18:https]$ telnet localhost 50000
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+GET / HTTP/1.1
+Connection closed by foreign host.
+[isx53320159@i12 tls18:https]$ openssl s_client -connect localhost:50000
+CONNECTED(00000003)
+depth=0 C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = www.auto1.cat, emailAddress = auto1@edt.otg
+verify error:num=18:self signed certificate
+verify return:1
+depth=0 C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = www.auto1.cat, emailAddress = auto1@edt.otg
+verify return:1
+---
+Certificate chain
+ 0 s:/C=ca/ST=barcelona/L=barcelona/O=edt/OU=informatica/CN=www.auto1.cat/emailAddress=auto1@edt.otg
+   i:/C=ca/ST=barcelona/L=barcelona/O=edt/OU=informatica/CN=www.auto1.cat/emailAddress=auto1@edt.otg
+---
+
+
+Creem uyn servidor amb un certificat correcte 
+[isx53320159@i12 tls18:https]$ openssl s_server -key serverkey.web1.pem -cert servercert.web1.pem -accept 50000 -www
+
+Ens conectem amb el client pero no detecta qui es la CA veritat VeritatAbsoluta
+
+[isx53320159@i12 tls18:https]$ openssl s_client -connect localhost:50000 
+CONNECTED(00000003)
+depth=0 C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = www.web1.org, emailAddress = admin@edt.org
+verify error:num=20:unable to get local issuer certificate
+verify return:1
+depth=0 C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = www.web1.org, emailAddress = admin@edt.org
+verify error:num=21:unable to verify the first certificate
+verify return:1
+  Start Time: 1553683842
+    Timeout   : 7200 (sec)
+    Verify return code: 21 (unable to verify the first certificate)
+    Extended master secret: yes
+
+Ens conectem amb el certificart de la CA
+[isx53320159@i12 tls18:https]$ openssl s_client -CAfile cacert.pem -connect localhost:50000 
+CONNECTED(00000003)
+depth=1 C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = VeritatAbsoluta, emailAddress = veritat@edt.org
+verify return:1
+depth=0 C = ca, ST = barcelona, L = barcelona, O = edt, OU = informatica, CN = www.web1.org, emailAddress = admin@edt.org
+verify return:1
+---
+   Start Time: 1553683887
+    Timeout   : 7200 (sec)
+    Verify return code: 0 (ok)
+    Extended master secret: yes
+
+Probem la conexio amb l'eina curl. Y surt l'error que no sap qui es la CA que signa el certificat
+[isx53320159@i12 tls18:https]$ curl -ssl -v https://localhost:50000
+* Rebuilt URL to: https://localhost:50000/
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 50000 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* Cipher selection: PROFILE=SYSTEM
+* successfully set certificate verify locations:
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+* TLSv1.2 (OUT), TLS handshake, Client hello (1):
+* TLSv1.2 (IN), TLS handshake, Server hello (2):
+* TLSv1.2 (IN), TLS handshake, Certificate (11):
+* TLSv1.2 (OUT), TLS alert, Server hello (2):
+* SSL certificate problem: unable to get local issuer certificate
+* stopped the pause stream!
+* Closing connection 0
+
+Curl amb la CA
+[isx53320159@i12 tls18:https]$ curl -ssl --cacert cacert.pem -v https://www.web1.org
+* Rebuilt URL to: https://www.web1.org/
+*   Trying 172.17.0.2...
+* TCP_NODELAY set
+* Connected to www.web1.org (172.17.0.2) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* Cipher selection: PROFILE=SYSTEM
+* successfully set certificate verify locations:
+*   CAfile: cacert.pem
+  CApath: none
+* TLSv1.2 (OUT), TLS handshake, Client hello (1):
+* TLSv1.2 (IN), TLS handshake, Server hello (2):
+* TLSv1.2 (IN), TLS handshake, Certificate (11):
+* TLSv1.2 (OUT), TLS alert, Server hello (2):
+* error:0407008A:rsa routines:RSA_padding_check_PKCS1_type_1:invalid padding
+* stopped the pause stream!
+* Closing connection 0
+
+Verificar certificat amb CA
+[isx53320159@i12 tls18:https]$ openssl verify -CAfile cacert.pem servercert.web1.pem 
+servercert.web1.pem: OK
+
+Enxeguem un servidor ncat
+[isx53320159@i12 tls18:https]$ ncat --ssl -l 50000
+
+Enxeguem un client simple ncat o probem y els ervidor tamnca la conexio
+[isx53320159@i12 tls18:https]$ ncat localhost 50000 
+
+Enxeguem el client ssl
+[isx53320159@i12 tls18:https]$ ncat --ssl localhost 50000
+hola
+hen hao
+pop
+
+Ens conectem amb simulant un client a gmail pop
+openssl s_client -connect pop.gmail.com:995 | less
+CONNECTED(00000003)
+---
+Certificate chain
+ 0 s:/C=US/ST=California/L=Mountain View/O=Google LLC/CN=pop.gmail.com
+   i:/C=US/O=Google Trust Services/CN=Google Internet Authority G3
+ 1 s:/C=US/O=Google Trust Services/CN=Google Internet Authority G3
+   i:/OU=GlobalSign Root CA - R2/O=GlobalSign/CN=GlobalSign
+---
+Server certificate
+
+PKI: Public Key Infrastructure
+
+[isx53320159@i12 pki]$ tree rpm-gpg/ | less --> mostra els certificats dels repositoris de descargar
+pwd
+
+/etc/pki/tls --> Directori base amb el que treballa openssl
+.
+├── cert.pem -> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+├── certs
+│   ├── baena.fm.crt
+│   ├── ca-bundle.crt -> /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+│   ├── ca-bundle.trust.crt -> /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+│   ├── localhost.crt
+│   ├── Makefile
+│   ├── secure.baena.fm.crt
+│   └── tmprequest
+├── misc
+├── openssl.cnf
+└── private
+    ├── baena.fm.csr
+    ├── localhost.key
+    ├── secure.baena.fm.key
+    └── secure.baena.key
+
+[ca] --> apartat ca
+
+Quan es crida la seccio ca: quan la opcio de openssl sigui cridada. Pots definir mes d'una CA default
+
+CRL: Certificat Relocated List. Llistas de rebucacio de certificats. Serveix ver guardar els certificats que han sigut revocats.
+
+
+default_days = 365 --> Dies per defecte
+default_crl_days =  --> Dies revocated
+default_md = sha256
+preserver = no
+
